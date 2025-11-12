@@ -48,7 +48,7 @@ function Kill-LockingProcesses {
         
         foreach ($proc in $processes) {
             try {
-                Write-Host "  Killing process: $($proc.Name) (PID: $($proc.Id))" -ForegroundColor Gray
+                Write-Host "Killing process: $($proc.Name) (PID: $($proc.Id))" -ForegroundColor Gray
                 Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
                 Start-Sleep -Milliseconds 200
             } catch {
@@ -69,7 +69,7 @@ function Force-DeleteFile {
     if (Test-Path $Path) {
         try {
             # Kill any processes that might be locking it
-            Write-Host "  Attempting to remove file: $Path" -ForegroundColor Gray
+            Write-Host "Attempting to remove file: $Path" -ForegroundColor Gray
             Kill-LockingProcesses -FilePath $Path
             
             # Clear readonly attributes
@@ -80,10 +80,12 @@ function Force-DeleteFile {
             
             # Try to delete
             Remove-Item -Path $Path -Force -ErrorAction Stop
-            Write-Host "  [OK] File removed successfully" -ForegroundColor Green
+            Write-Host "[OK] File removed successfully" -ForegroundColor Green
         }
         catch {
-            Write-Host "  [WARNING] Could not remove file: $($_.Exception.Message)" -ForegroundColor Yellow
+            Write-Host "[WARNING] Could not remove file: $($_.Exception.Message)" -ForegroundColor Yellow
+            Write-Host "`n"
+            Write-Host "[INFO] Please re-start your pc and re-run this script!`n " -ForegroundColor Yellow
         }
     }
 }
@@ -138,7 +140,7 @@ function Ensure-Directory {
         }
         catch {
             Write-Host "[ERROR] Failed to create directory: $Path" -ForegroundColor Red
-            Write-Host "  Error: $($_.Exception.Message)" -ForegroundColor Red
+            Write-Host "Error: $($_.Exception.Message)" -ForegroundColor Red
             exit 1
         }
     }
@@ -411,7 +413,7 @@ if (Test-Path $guiExePath) {
 }
 else {
     Write-Host "[WARNING] GUI executable not found at $guiExePath" -ForegroundColor Yellow
-    Write-Host "  Shortcut creation skipped" -ForegroundColor Gray
+    Write-Host "Shortcut creation skipped" -ForegroundColor Gray
 }
 
 Write-Host ""
