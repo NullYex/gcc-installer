@@ -69,7 +69,7 @@ function Force-DeleteFile {
     if (Test-Path $Path) {
         try {
             # Kill any processes that might be locking it
-            Write-Host "Attempting to remove file: $Path" -ForegroundColor Gray
+            Write-Host "[INFO] Attempting to remove file: $Path" -ForegroundColor Gray
             Kill-LockingProcesses -FilePath $Path
             
             # Clear readonly attributes
@@ -84,8 +84,7 @@ function Force-DeleteFile {
         }
         catch {
             Write-Host "[WARNING] Could not remove file: $($_.Exception.Message)" -ForegroundColor Yellow
-            Write-Host "`n"
-            Write-Host "[INFO] Please re-start your pc and re-run this script!`n " -ForegroundColor Cyan
+            Write-Host "`n[INFO] Please re-start your pc and re-run this script!`n " -ForegroundColor Cyan
             exit 1
         }
     }
@@ -126,7 +125,7 @@ function Test-AdminPrivileges {
     $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
     if (-not $isAdmin) {
         Write-Host "[WARNING] This script requires administrator privileges!" -ForegroundColor Yellow
-        Write-Host "Please run PowerShell as Administrator and retry." -ForegroundColor Yellow
+        Write-Host "[INFO] Please run PowerShell as Administrator and retry." -ForegroundColor Yellow
         exit 1
     }
 }
@@ -189,8 +188,7 @@ function Download-FileOptimized {
     )
     
     try {
-        Write-Host ""
-        Write-Host "[DOWNLOAD] Killing processes and preparing for download..." -ForegroundColor Cyan
+        Write-Host "`n[DOWNLOAD] Killing processes and preparing for download..." -ForegroundColor Cyan
         
         # Kill processes from the directory first
         Kill-ProcessesUsingDirectory -Path (Split-Path $DestinationPath -Parent)
@@ -211,8 +209,7 @@ function Download-FileOptimized {
         [long]$fileSizeBytes = $response.ContentLength
         $fileSizeMB = [math]::Round($fileSizeBytes / 1MB, 2)
         
-        Write-Host "[DOWNLOAD] Downloading MinGW... ($fileSizeMB MB)" -ForegroundColor Cyan
-        Write-Host "`n"
+        Write-Host "[DOWNLOAD] Downloading MinGW... ($fileSizeMB MB)`n" -ForegroundColor Cyan
         
         $responseStream = $response.GetResponseStream()
         $fileStream = [System.IO.FileStream]::new($DestinationPath, [System.IO.FileMode]::Create, [System.IO.FileAccess]::Write, [System.IO.FileShare]::None, 65536)
@@ -236,13 +233,10 @@ function Download-FileOptimized {
         $responseStream.Dispose()
         $response.Dispose()
         
-        Write-Host ""
-        Write-Host "[OK] Download completed successfully!" -ForegroundColor Green
-        Write-Host ""
+        Write-Host "`n[OK] Download completed successfully!`n" -ForegroundColor Green
     }
     catch {
-        Write-Host ""
-        Write-Host "[ERROR] Download failed: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "`n[ERROR] Download failed: $($_.Exception.Message)" -ForegroundColor Red
         exit 1
     }
 }
@@ -260,8 +254,7 @@ function Extract-Archive-Optimized {
         Write-Host "[EXTRACT] Killing processes from extraction directory..." -ForegroundColor Cyan
         Kill-ProcessesUsingDirectory -Path $DestinationPath
         
-        Write-Host ""
-        Write-Host "[EXTRACT] Extracting MinGW..." -ForegroundColor Cyan
+        Write-Host "`n[EXTRACT] Extracting MinGW..." -ForegroundColor Cyan
         
         Add-Type -AssemblyName System.IO.Compression.FileSystem
         
@@ -296,13 +289,10 @@ function Extract-Archive-Optimized {
         }
         
         $zip.Dispose()
-        Write-Host ""
-        Write-Host "[OK] Extraction completed!" -ForegroundColor Green
-        Write-Host ""
+        Write-Host "`n[OK] Extraction completed!`n" -ForegroundColor Green
     }
     catch {
-        Write-Host ""
-        Write-Host "[ERROR] Extraction failed: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "`n[ERROR] Extraction failed: $($_.Exception.Message)`n" -ForegroundColor Red
         exit 1
     }
 }
@@ -373,16 +363,14 @@ function Create-Shortcut {
 Clear-Host
 Show-AsciiArt
 Test-AdminPrivileges
-Write-Host "[SETUP] Setting up pre-installed MinGW-gcc..." -ForegroundColor Yellow
-Write-Host ""
+Write-Host "[SETUP] Setting up pre-installed MinGW-gcc...`n" -ForegroundColor Yellow
 
 Ensure-Directory -Path $mingwDir
 Download-FileOptimized -Url $mingwUrl -DestinationPath $mingwZip
 Extract-Archive-Optimized -ZipPath $mingwZip -DestinationPath $mingwDir
 
 Remove-Item -Path $mingwZip -Force -ErrorAction SilentlyContinue
-Write-Host "[CLEANUP] Cleaned up temporary files" -ForegroundColor Gray
-Write-Host ""
+Write-Host "[CLEANUP] Cleaned up temporary files`n" -ForegroundColor Gray
 
 $mingwBinDir = Join-Path $mingwDir "bin"
 
@@ -414,14 +402,12 @@ if (Test-Path $guiExePath) {
 }
 else {
     Write-Host "[WARNING] GUI executable not found at $guiExePath" -ForegroundColor Yellow
-    Write-Host "Shortcut creation skipped" -ForegroundColor Gray
+    Write-Host "[INFO] Shortcut creation skipped" -ForegroundColor Gray
 }
 
-Write-Host ""
-Write-Host "============================================" -ForegroundColor Cyan
+Write-Host "`n============================================" -ForegroundColor Cyan
 Write-Host "[SUCCESS] Installation Complete!" -ForegroundColor Green
-Write-Host "============================================" -ForegroundColor Cyan
-Write-Host ""
+Write-Host "============================================`n" -ForegroundColor Cyan
 # Write-Host "[INFO] Installation Directory: $mingwDir" -ForegroundColor Yellow
 # Write-Host "[INFO] Binary Directory: $mingwBinDir" -ForegroundColor Yellow
 # Write-Host "[INFO] Start Menu Shortcut: $shortcutPath" -ForegroundColor Yellow
