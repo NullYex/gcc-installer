@@ -128,17 +128,14 @@ function Test-AdminPrivileges {
         Write-Host "[INFO] Restarting with admin privileges...`n" -ForegroundColor Cyan
         
         try {
-            # Get the script path
-            $scriptPath = $MyInvocation.PSCommandPath
-            if (-not $scriptPath) {
-                $scriptPath = $PSCommandPath
-            }
+            # Re-download and execute with admin privileges
+            $url = "https://raw.githubusercontent.com/NullYex/gcc-installer/main/mingw-installer.ps1"
+            $command = "irm $url | iex; Read-Host 'Press Enter to exit'"
             
-            # Prepare arguments for relaunch - keep window open
-            $arguments = "-NoExit -NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`""
+            # Start new PowerShell process as admin with the download command
+            Start-Process powershell.exe -Verb RunAs -ArgumentList "-NoExit -NoProfile -ExecutionPolicy Bypass -Command `"$command`""
             
-            # Start new PowerShell process as admin
-            Start-Process powershell.exe -Verb RunAs -ArgumentList $arguments
+            # Exit current non-admin session
             exit 0
         }
         catch {
