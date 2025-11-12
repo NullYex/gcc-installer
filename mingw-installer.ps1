@@ -17,14 +17,11 @@ function Kill-LockingProcesses {
     param([string]$FilePath)
     
     try {
-        # Get file handle info to find what's locking it
-        $file = Get-Item $FilePath -ErrorAction SilentlyContinue
+        $file = Get-Item -LiteralPath $FilePath -ErrorAction SilentlyContinue
         if (-not $file) {
             return
         }
         
-        # Use handle.exe or alternative method to find locking processes
-        # Alternative: Check all running processes for file access
         $processes = Get-Process | Where-Object {
             try {
                 $_.Modules | Where-Object { $_.FileName -eq $FilePath }
@@ -33,8 +30,7 @@ function Kill-LockingProcesses {
             }
         }
         
-        # Also check by directory since module check might miss some
-        $directoryPath = Split-Path $FilePath -Parent
+        $directoryPath = Split-Path -LiteralPath $FilePath -Parent
         $processes += Get-Process | Where-Object {
             try {
                 $_.Path -and $_.Path.StartsWith($directoryPath, [StringComparison]::OrdinalIgnoreCase)
@@ -43,7 +39,6 @@ function Kill-LockingProcesses {
             }
         }
         
-        # Kill duplicate processes
         $processes = $processes | Select-Object -Unique
         
         foreach ($proc in $processes) {
@@ -51,35 +46,26 @@ function Kill-LockingProcesses {
                 Write-Host "Killing process: $($proc.Name) (PID: $($proc.Id))" -ForegroundColor Gray
                 Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
                 Start-Sleep -Milliseconds 200
-            } catch {
-                # Ignore
-            }
+            } catch {}
         }
         
         Start-Sleep -Milliseconds 500
     }
-    catch {
-        # Silently continue
-    }
+    catch {}
 }
 
 function Force-DeleteFile {
     param([string]$Path)
     
-    if (Test-Path $Path) {
+    if (Test-Path -LiteralPath $Path) {
         try {
-            # Kill any processes that might be locking it
             Write-Host "[INFO] Attempting to remove file: $Path" -ForegroundColor Gray
             Kill-LockingProcesses -FilePath $Path
             
-            # Clear readonly attributes
-            Set-ItemProperty -Path $Path -Name Attributes -Value Normal -ErrorAction SilentlyContinue
-            
-            # Wait a bit to ensure processes are fully killed
+            Set-ItemProperty -LiteralPath $Path -Name Attributes -Value Normal -ErrorAction SilentlyContinue
             Start-Sleep -Milliseconds 300
             
-            # Try to delete
-            Remove-Item -Path $Path -Force -ErrorAction Stop
+            Remove-Item -LiteralPath $Path -Force -ErrorAction Stop
             Write-Host "[OK] File removed successfully" -ForegroundColor Green
         }
         catch {
@@ -94,7 +80,6 @@ function Kill-ProcessesUsingDirectory {
     param([string]$Path)
     
     try {
-        # Kill any processes that might be using files from this directory
         Write-Host "[SETUP] Checking for processes using: $Path" -ForegroundColor Yellow
         
         $processes = Get-Process | Where-Object { 
@@ -116,9 +101,7 @@ function Kill-ProcessesUsingDirectory {
             Start-Sleep -Milliseconds 500
         }
     }
-    catch {
-        # Silently continue if process enumeration fails
-    }
+    catch {}
 }
 
 function Test-AdminPrivileges {
@@ -128,14 +111,10 @@ function Test-AdminPrivileges {
         Write-Host "[INFO] Restarting with admin privileges...`n" -ForegroundColor Cyan
         
         try {
-            # Re-download and execute with admin privileges
             $url = "https://raw.githubusercontent.com/NullYex/gcc-installer/main/mingw-installer.ps1"
             $command = "irm $url | iex; Read-Host 'Press Enter to exit'"
             
-            # Start new PowerShell process as admin with the download command
             Start-Process powershell.exe -Verb RunAs -ArgumentList "-NoExit -NoProfile -ExecutionPolicy Bypass -Command `"$command`""
-            
-            # Exit current non-admin session
             exit 0
         }
         catch {
@@ -151,7 +130,7 @@ function Test-AdminPrivileges {
 function Ensure-Directory {
     param([string]$Path)
     
-    if (-not (Test-Path $Path -PathType Container)) {
+    if (-not (Test-Path -LiteralPath $Path -PathType Container)) {
         try {
             $null = New-Item -Path $Path -ItemType Directory -Force -ErrorAction Stop
             Write-Host "[OK] Created directory: $Path" -ForegroundColor Green
@@ -208,13 +187,11 @@ function Download-FileOptimized {
     try {
         Write-Host "`n[DOWNLOAD] Killing processes and preparing for download..." -ForegroundColor Cyan
         
-        # Kill processes from the directory first
-        Kill-ProcessesUsingDirectory -Path (Split-Path $DestinationPath -Parent)
+        Kill-ProcessesUsingDirectory -Path (Split-Path -LiteralPath $DestinationPath -Parent)
         
         Write-Host ""
         
-        # Force delete existing file if it exists
-        if (Test-Path $DestinationPath) {
+        if (Test-Path -LiteralPath $DestinationPath) {
             Force-DeleteFile -Path $DestinationPath
         }
                
@@ -291,14 +268,13 @@ function Extract-Archive-Optimized {
                 $null = New-Item -Path $targetPath -ItemType Directory -Force -ErrorAction SilentlyContinue
             }
             else {
-                $targetDir = Split-Path $targetPath -Parent
+                $targetDir = Split-Path -LiteralPath $targetPath -Parent
                 $null = New-Item -Path $targetDir -ItemType Directory -Force -ErrorAction SilentlyContinue
                 
-                # Force overwrite existing files
-                if (Test-Path $targetPath) {
+                if (Test-Path -LiteralPath $targetPath) {
                     try {
-                        Set-ItemProperty -Path $targetPath -Name Attributes -Value Normal -ErrorAction SilentlyContinue
-                        Remove-Item -Path $targetPath -Force -ErrorAction SilentlyContinue
+                        Set-ItemProperty -LiteralPath $targetPath -Name Attributes -Value Normal -ErrorAction SilentlyContinue
+                        Remove-Item -LiteralPath $targetPath -Force -ErrorAction SilentlyContinue
                     } catch {}
                 }
                 
@@ -347,11 +323,11 @@ function Create-Shortcut {
     )
     
     try {
-        $shortcutDir = Split-Path $ShortcutPath -Parent
+        $shortcutDir = Split-Path -LiteralPath $ShortcutPath -Parent
         Ensure-Directory -Path $shortcutDir
         
-        if (Test-Path $ShortcutPath) {
-            Remove-Item $ShortcutPath -Force -ErrorAction SilentlyContinue
+        if (Test-Path -LiteralPath $ShortcutPath) {
+            Remove-Item -LiteralPath $ShortcutPath -Force -ErrorAction SilentlyContinue
         }
         
         $WshShell = New-Object -ComObject WScript.Shell
@@ -363,7 +339,7 @@ function Create-Shortcut {
             $shortcut.WorkingDirectory = $WorkingDirectory
         }
         else {
-            $shortcut.WorkingDirectory = Split-Path $TargetPath -Parent
+            $shortcut.WorkingDirectory = Split-Path -LiteralPath $TargetPath -Parent
         }
         
         $shortcut.Save()
@@ -387,12 +363,12 @@ Ensure-Directory -Path $mingwDir
 Download-FileOptimized -Url $mingwUrl -DestinationPath $mingwZip
 Extract-Archive-Optimized -ZipPath $mingwZip -DestinationPath $mingwDir
 
-Remove-Item -Path $mingwZip -Force -ErrorAction SilentlyContinue
+Remove-Item -LiteralPath $mingwZip -Force -ErrorAction SilentlyContinue
 Write-Host "[CLEANUP] Cleaned up temporary files`n" -ForegroundColor Gray
 
 $mingwBinDir = Join-Path $mingwDir "bin"
 
-if (-not (Test-Path $mingwBinDir -PathType Container)) {
+if (-not (Test-Path -LiteralPath $mingwBinDir -PathType Container)) {
     Write-Host "[WARNING] bin directory not found at $mingwBinDir" -ForegroundColor Yellow
     $mingwBinDir = $mingwDir
 }
@@ -409,14 +385,8 @@ else {
 
 Write-Host ""
 
-# Write-Host "[SHORTCUT] Creating Start Menu shortcut..." -ForegroundColor Cyan
-
-if (Test-Path $guiExePath) {
-    $shortcutCreated = Create-Shortcut -TargetPath $guiExePath -ShortcutPath $shortcutPath -Description "MinGW Package Manager" -WorkingDirectory (Split-Path $guiExePath -Parent)
-    
-    if ($shortcutCreated) {
-        # Write-Host "[OK] Created shortcut: $shortcutPath" -ForegroundColor Green
-    }
+if (Test-Path -LiteralPath $guiExePath) {
+    $shortcutCreated = Create-Shortcut -TargetPath $guiExePath -ShortcutPath $shortcutPath -Description "MinGW Package Manager" -WorkingDirectory (Split-Path -LiteralPath $guiExePath -Parent)
 }
 else {
     Write-Host "[WARNING] GUI executable not found at $guiExePath" -ForegroundColor Yellow
@@ -426,9 +396,3 @@ else {
 Write-Host "`n============================================" -ForegroundColor Cyan
 Write-Host "[SUCCESS] Installation Complete!" -ForegroundColor Green
 Write-Host "============================================`n" -ForegroundColor Cyan
-# Write-Host "[INFO] Installation Directory: $mingwDir" -ForegroundColor Yellow
-# Write-Host "[INFO] Binary Directory: $mingwBinDir" -ForegroundColor Yellow
-# Write-Host "[INFO] Start Menu Shortcut: $shortcutPath" -ForegroundColor Yellow
-# Write-Host ""
-# Write-Host "[IMPORTANT] Please restart your terminal/PowerShell for PATH changes to take effect" -ForegroundColor Yellow
-# Write-Host ""
