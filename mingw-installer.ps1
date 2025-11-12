@@ -133,7 +133,7 @@ function Ensure-Directory {
     if (-not (Test-Path -LiteralPath $Path -PathType Container)) {
         try {
             $null = New-Item -Path $Path -ItemType Directory -Force -ErrorAction Stop
-            Write-Host "[OK] Created directory: $Path" -ForegroundColor Green
+            Write-Host "[OK] Created directory: $Path`n" -ForegroundColor Green
         }
         catch {
             Write-Host "[ERROR] Failed to create directory: $Path" -ForegroundColor Red
