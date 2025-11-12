@@ -125,19 +125,20 @@ function Test-AdminPrivileges {
     $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
     if (-not $isAdmin) {
         Write-Host "[WARNING] This script requires administrator privileges!" -ForegroundColor Yellow
-        Write-Host "[INFO] Attempting to restart with admin privileges...`n" -ForegroundColor Cyan
+        Write-Host "[INFO] Restarting with admin privileges...`n" -ForegroundColor Cyan
         
         try {
+            # Get the script path
             $scriptPath = $MyInvocation.PSCommandPath
             if (-not $scriptPath) {
                 $scriptPath = $PSCommandPath
             }
             
-            # Prepare arguments for relaunch
-            $arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`""
+            # Prepare arguments for relaunch - keep window open
+            $arguments = "-NoExit -NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`""
             
             # Start new PowerShell process as admin
-            Start-Process powershell.exe -Verb RunAs -ArgumentList $arguments -Wait
+            Start-Process powershell.exe -Verb RunAs -ArgumentList $arguments
             exit 0
         }
         catch {
