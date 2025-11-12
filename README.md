@@ -1,4 +1,4 @@
-# MinGW Installer 🚀
+# [MinGW Installer](https://github.com/NullYex/gcc-installer) 🚀
 
  **One-Command MinGW Installation** - Fast, Automated, No Headaches!
 
@@ -6,7 +6,7 @@
 
 ## ⚡ Quick Install
 
-**Copy & Paste this into Command Prompt or PowerShell:**
+**Copy & Paste this into Windows Terminal, CMD or PowerShell:**
 
 ```powershell
 powershell.exe -C "irm https://raw.githubusercontent.com/NullYex/gcc-installer/main/mingw-installer.ps1 | iex"
