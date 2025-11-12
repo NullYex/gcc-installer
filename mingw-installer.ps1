@@ -30,7 +30,7 @@ function Kill-LockingProcesses {
             }
         }
         
-        $directoryPath = Split-Path -LiteralPath $FilePath -Parent
+        $directoryPath = Split-Path -Path $FilePath -Parent
         $processes += Get-Process | Where-Object {
             try {
                 $_.Path -and $_.Path.StartsWith($directoryPath, [StringComparison]::OrdinalIgnoreCase)
@@ -187,7 +187,8 @@ function Download-FileOptimized {
     try {
         Write-Host "`n[DOWNLOAD] Killing processes and preparing for download..." -ForegroundColor Cyan
         
-        Kill-ProcessesUsingDirectory -Path (Split-Path -LiteralPath $DestinationPath -Parent)
+        $parentDir = Split-Path -Path $DestinationPath -Parent
+        Kill-ProcessesUsingDirectory -Path $parentDir
         
         Write-Host ""
         
@@ -268,7 +269,7 @@ function Extract-Archive-Optimized {
                 $null = New-Item -Path $targetPath -ItemType Directory -Force -ErrorAction SilentlyContinue
             }
             else {
-                $targetDir = Split-Path -LiteralPath $targetPath -Parent
+                $targetDir = Split-Path -Path $targetPath -Parent
                 $null = New-Item -Path $targetDir -ItemType Directory -Force -ErrorAction SilentlyContinue
                 
                 if (Test-Path -LiteralPath $targetPath) {
@@ -323,7 +324,7 @@ function Create-Shortcut {
     )
     
     try {
-        $shortcutDir = Split-Path -LiteralPath $ShortcutPath -Parent
+        $shortcutDir = Split-Path -Path $ShortcutPath -Parent
         Ensure-Directory -Path $shortcutDir
         
         if (Test-Path -LiteralPath $ShortcutPath) {
@@ -339,7 +340,7 @@ function Create-Shortcut {
             $shortcut.WorkingDirectory = $WorkingDirectory
         }
         else {
-            $shortcut.WorkingDirectory = Split-Path -LiteralPath $TargetPath -Parent
+            $shortcut.WorkingDirectory = Split-Path -Path $TargetPath -Parent
         }
         
         $shortcut.Save()
@@ -386,7 +387,7 @@ else {
 Write-Host ""
 
 if (Test-Path -LiteralPath $guiExePath) {
-    $shortcutCreated = Create-Shortcut -TargetPath $guiExePath -ShortcutPath $shortcutPath -Description "MinGW Package Manager" -WorkingDirectory (Split-Path -LiteralPath $guiExePath -Parent)
+    $shortcutCreated = Create-Shortcut -TargetPath $guiExePath -ShortcutPath $shortcutPath -Description "MinGW Package Manager" -WorkingDirectory (Split-Path -Path $guiExePath -Parent)
 }
 else {
     Write-Host "[WARNING] GUI executable not found at $guiExePath" -ForegroundColor Yellow
