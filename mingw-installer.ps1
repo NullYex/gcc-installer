@@ -66,7 +66,7 @@ function Force-DeleteFile {
             Start-Sleep -Milliseconds 300
             
             Remove-Item -LiteralPath $Path -Force -ErrorAction Stop
-            Write-Host "[OK] File removed successfully" -ForegroundColor Green
+            Write-Host "[OK] File removed successfully`n" -ForegroundColor Green
         }
         catch {
             Write-Host "[WARNING] Could not remove file: $($_.Exception.Message)" -ForegroundColor Yellow
@@ -229,7 +229,7 @@ function Download-FileOptimized {
         $responseStream.Dispose()
         $response.Dispose()
         
-        Write-Host "`n[OK] Download completed successfully!`n" -ForegroundColor Green
+        Write-Host "`n`n[OK] Download completed successfully!`n" -ForegroundColor Green
     }
     catch {
         Write-Host "`n[ERROR] Download failed: $($_.Exception.Message)" -ForegroundColor Red
@@ -284,7 +284,7 @@ function Extract-Archive-Optimized {
         }
         
         $zip.Dispose()
-        Write-Host "`n[OK] Extraction completed!`n" -ForegroundColor Green
+        Write-Host "`n`n[OK] Extraction completed!`n" -ForegroundColor Green
     }
     catch {
         Write-Host "`n[ERROR] Extraction failed: $($_.Exception.Message)`n" -ForegroundColor Red
@@ -394,6 +394,6 @@ else {
     Write-Host "[INFO] Shortcut creation skipped" -ForegroundColor Gray
 }
 
-Write-Host "`n============================================" -ForegroundColor Cyan
-Write-Host "[SUCCESS] Installation Complete!" -ForegroundColor Green
+Write-Host "============================================" -ForegroundColor Cyan
+Write-Host "   [SUCCESS] Installation Completed, Enjoy!" -ForegroundColor Green
 Write-Host "============================================`n" -ForegroundColor Cyan
