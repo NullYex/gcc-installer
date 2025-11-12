@@ -13,6 +13,112 @@ function Show-AsciiArt {
     Write-Host "---------------------------------------`n`n" -ForegroundColor Cyan
 }
 
+function Kill-LockingProcesses {
+    param([string]$FilePath)
+    
+    try {
+        # Get file handle info to find what's locking it
+        $file = Get-Item $FilePath -ErrorAction SilentlyContinue
+        if (-not $file) {
+            return
+        }
+        
+        # Use handle.exe or alternative method to find locking processes
+        # Alternative: Check all running processes for file access
+        $processes = Get-Process | Where-Object {
+            try {
+                $_.Modules | Where-Object { $_.FileName -eq $FilePath }
+            } catch {
+                $null
+            }
+        }
+        
+        # Also check by directory since module check might miss some
+        $directoryPath = Split-Path $FilePath -Parent
+        $processes += Get-Process | Where-Object {
+            try {
+                $_.Path -and $_.Path.StartsWith($directoryPath, [StringComparison]::OrdinalIgnoreCase)
+            } catch {
+                $false
+            }
+        }
+        
+        # Kill duplicate processes
+        $processes = $processes | Select-Object -Unique
+        
+        foreach ($proc in $processes) {
+            try {
+                Write-Host "  Killing process: $($proc.Name) (PID: $($proc.Id))" -ForegroundColor Gray
+                Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
+                Start-Sleep -Milliseconds 200
+            } catch {
+                # Ignore
+            }
+        }
+        
+        Start-Sleep -Milliseconds 500
+    }
+    catch {
+        # Silently continue
+    }
+}
+
+function Force-DeleteFile {
+    param([string]$Path)
+    
+    if (Test-Path $Path) {
+        try {
+            # Kill any processes that might be locking it
+            Write-Host "  Attempting to remove file: $Path" -ForegroundColor Gray
+            Kill-LockingProcesses -FilePath $Path
+            
+            # Clear readonly attributes
+            Set-ItemProperty -Path $Path -Name Attributes -Value Normal -ErrorAction SilentlyContinue
+            
+            # Wait a bit to ensure processes are fully killed
+            Start-Sleep -Milliseconds 300
+            
+            # Try to delete
+            Remove-Item -Path $Path -Force -ErrorAction Stop
+            Write-Host "  [OK] File removed successfully" -ForegroundColor Green
+        }
+        catch {
+            Write-Host "  [WARNING] Could not remove file: $($_.Exception.Message)" -ForegroundColor Yellow
+        }
+    }
+}
+
+function Kill-ProcessesUsingDirectory {
+    param([string]$Path)
+    
+    try {
+        # Kill any processes that might be using files from this directory
+        Write-Host "[SETUP] Checking for processes using: $Path" -ForegroundColor Yellow
+        
+        $processes = Get-Process | Where-Object { 
+            try { 
+                $_.Path -and $_.Path.StartsWith($Path, [StringComparison]::OrdinalIgnoreCase) 
+            } catch { 
+                $false 
+            }
+        }
+        
+        if ($processes.Count -gt 0) {
+            foreach ($proc in $processes) {
+                try {
+                    Write-Host "  Terminating: $($proc.Name) (PID: $($proc.Id))" -ForegroundColor Gray
+                    Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
+                    Start-Sleep -Milliseconds 200
+                } catch {}
+            }
+            Start-Sleep -Milliseconds 500
+        }
+    }
+    catch {
+        # Silently continue if process enumeration fails
+    }
+}
+
 function Test-AdminPrivileges {
     $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
     if (-not $isAdmin) {
@@ -80,6 +186,19 @@ function Download-FileOptimized {
     )
     
     try {
+        Write-Host ""
+        Write-Host "[DOWNLOAD] Killing processes and preparing for download..." -ForegroundColor Cyan
+        
+        # Kill processes from the directory first
+        Kill-ProcessesUsingDirectory -Path (Split-Path $DestinationPath -Parent)
+        
+        Write-Host ""
+        
+        # Force delete existing file if it exists
+        if (Test-Path $DestinationPath) {
+            Force-DeleteFile -Path $DestinationPath
+        }
+               
         $request = [System.Net.HttpWebRequest]::Create($Url)
         $request.Method = "GET"
         $request.Timeout = 30000
@@ -135,6 +254,10 @@ function Extract-Archive-Optimized {
     )
     
     try {
+        Write-Host "[EXTRACT] Killing processes from extraction directory..." -ForegroundColor Cyan
+        Kill-ProcessesUsingDirectory -Path $DestinationPath
+        
+        Write-Host ""
         Write-Host "[EXTRACT] Extracting MinGW..." -ForegroundColor Cyan
         
         Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -156,6 +279,15 @@ function Extract-Archive-Optimized {
             else {
                 $targetDir = Split-Path $targetPath -Parent
                 $null = New-Item -Path $targetDir -ItemType Directory -Force -ErrorAction SilentlyContinue
+                
+                # Force overwrite existing files
+                if (Test-Path $targetPath) {
+                    try {
+                        Set-ItemProperty -Path $targetPath -Name Attributes -Value Normal -ErrorAction SilentlyContinue
+                        Remove-Item -Path $targetPath -Force -ErrorAction SilentlyContinue
+                    } catch {}
+                }
+                
                 [System.IO.Compression.ZipFileExtensions]::ExtractToFile($entry, $targetPath, $true)
             }
         }
