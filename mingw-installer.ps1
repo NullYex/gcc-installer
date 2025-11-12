@@ -166,13 +166,11 @@ function Show-ProgressBar {
     $emptyChar = [char]9617
     $bar = ($filledChar.ToString() * $filledWidth) + ($emptyChar.ToString() * ($BarWidth - $filledWidth))
     
-    $currentDisplay = [math]::Round($CurrentValue, 2)
-    $totalDisplay = [math]::Round($TotalValue, 2)
-
-    $percentStr = $percentComplete.ToString("##0.00").PadLeft(6)
-    $currentStr = $currentDisplay.ToString("#.##").PadLeft($totalDisplay.ToString("#.##").Length)
+    $currentDisplay = $CurrentValue.ToString("0.00")
+    $totalDisplay = $TotalValue.ToString("0.00")
+    $percentStr = $percentComplete.ToString("0.00")
     
-    Write-Host -NoNewLine "`r$ProgressText $bar [ $currentStr$Suffix / $totalDisplay$Suffix ] $percentStr%"
+    Write-Host -NoNewLine "`r$ProgressText $bar [ $currentDisplay$Suffix / $totalDisplay$Suffix ] $percentStr%"
 }
 
 function Download-FileOptimized {
