@@ -85,7 +85,8 @@ function Force-DeleteFile {
         catch {
             Write-Host "[WARNING] Could not remove file: $($_.Exception.Message)" -ForegroundColor Yellow
             Write-Host "`n"
-            Write-Host "[INFO] Please re-start your pc and re-run this script!`n " -ForegroundColor Yellow
+            Write-Host "[INFO] Please re-start your pc and re-run this script!`n " -ForegroundColor Cyan
+            exit 1
         }
     }
 }
