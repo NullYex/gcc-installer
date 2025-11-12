@@ -59,7 +59,7 @@ function Force-DeleteFile {
     
     if (Test-Path -LiteralPath $Path) {
         try {
-            Write-Host "[INFO] Attempting to remove file: $Path" -ForegroundColor Gray
+            Write-Host "[INFO] Attempting to remove file: $Path" -ForegroundColor Cyan
             Kill-LockingProcesses -FilePath $Path
             
             Set-ItemProperty -LiteralPath $Path -Name Attributes -Value Normal -ErrorAction SilentlyContinue
@@ -183,7 +183,7 @@ function Download-FileOptimized {
     )
     
     try {
-        Write-Host "`n[DOWNLOAD] Killing processes and preparing for download..." -ForegroundColor Cyan
+        Write-Host "[INFO] Killing processes and preparing for download..." -ForegroundColor Cyan
         
         $parentDir = Split-Path -Path $DestinationPath -Parent
         Kill-ProcessesUsingDirectory -Path $parentDir
@@ -203,7 +203,7 @@ function Download-FileOptimized {
         [long]$fileSizeBytes = $response.ContentLength
         $fileSizeMB = [math]::Round($fileSizeBytes / 1MB, 2)
         
-        Write-Host "[DOWNLOAD] Downloading MinGW... ($fileSizeMB MB)`n" -ForegroundColor Cyan
+        Write-Host "`n[DOWNLOAD] Downloading MinGW... ($fileSizeMB MB)`n" -ForegroundColor Cyan
         
         $responseStream = $response.GetResponseStream()
         $fileStream = [System.IO.FileStream]::new($DestinationPath, [System.IO.FileMode]::Create, [System.IO.FileAccess]::Write, [System.IO.FileShare]::None, 65536)
@@ -227,7 +227,7 @@ function Download-FileOptimized {
         $responseStream.Dispose()
         $response.Dispose()
         
-        Write-Host "`n`n[OK] Download completed successfully!`n" -ForegroundColor Green
+        Write-Host "`n`n[OK] Download completed successfully!`n`n" -ForegroundColor Green
     }
     catch {
         Write-Host "`n[ERROR] Download failed: $($_.Exception.Message)" -ForegroundColor Red
@@ -248,7 +248,7 @@ function Extract-Archive-Optimized {
         Write-Host "[EXTRACT] Killing processes from extraction directory..." -ForegroundColor Cyan
         Kill-ProcessesUsingDirectory -Path $DestinationPath
         
-        Write-Host "`n[EXTRACT] Extracting MinGW..." -ForegroundColor Cyan
+        Write-Host "`n`n[EXTRACT] Extracting MinGW..." -ForegroundColor Cyan
         
         Add-Type -AssemblyName System.IO.Compression.FileSystem
         
@@ -258,7 +258,7 @@ function Extract-Archive-Optimized {
         
         foreach ($entry in $zip.Entries) {
             $currentEntry++
-            $percent = [math]::Round(($currentEntry / $totalEntries) * 100, 2)
+            $percent = (($currentEntry / $totalEntries) * 100).ToString("0.00")
             Write-Host -NoNewLine "`r[$percent%] Extracting $currentEntry/$totalEntries files..."
             
             $targetPath = Join-Path $DestinationPath $entry.FullName
@@ -282,7 +282,7 @@ function Extract-Archive-Optimized {
         }
         
         $zip.Dispose()
-        Write-Host "`n`n[OK] Extraction completed!`n" -ForegroundColor Green
+        Write-Host "`n`n[OK] Extraction completed!`n`n" -ForegroundColor Green
     }
     catch {
         Write-Host "`n[ERROR] Extraction failed: $($_.Exception.Message)`n" -ForegroundColor Red
@@ -392,6 +392,6 @@ else {
     Write-Host "[INFO] Shortcut creation skipped" -ForegroundColor Gray
 }
 
-Write-Host "============================================" -ForegroundColor Cyan
+Write-Host "`n============================================" -ForegroundColor Cyan
 Write-Host "   [SUCCESS] Installation Completed, Enjoy!" -ForegroundColor Green
 Write-Host "============================================`n" -ForegroundColor Cyan
